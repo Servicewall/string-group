@@ -1,1 +1,1 @@
-module string-group
+module github.com/Servicewall/string-group
