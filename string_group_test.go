@@ -1,11 +1,12 @@
 package string_group
 
 import (
+	"slices"
 	"testing"
 	"unicode"
 )
 
-var example = "** 用户名User123在2023年10月15日购买了iPhone15手机，价格为¥6999元。 **hello"
+var example = "** 用户名User123在2023年10月15日购买了iPhone15手机，价格为¥6999元。 **Xx-()hello"
 
 // 分组测试
 func TestGroups(t *testing.T) {
@@ -15,6 +16,15 @@ func TestGroups(t *testing.T) {
 			if !unicode.Is(unicode.Han, c) {
 				t.Fatal("汉字子串包含非汉字字符")
 			}
+		}
+	}
+}
+
+func TestCommonGroups(t *testing.T) {
+	groups := SplitIntoGroups(example)
+	for _, seg := range groups.GetSegmentsByType(GroupTypeCommon) {
+		if !slices.Contains([]string{"**", "**Xx-()"}, seg.String(example)) {
+			t.Fatal("分组错误")
 		}
 	}
 }

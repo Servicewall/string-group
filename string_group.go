@@ -11,6 +11,7 @@ const (
 	GroupTypeLetters
 	GroupTypeDigits
 	GroupTypeOthers
+	GroupTypeCommon
 )
 
 // StringGroups 存储分组后的字符串段
@@ -18,7 +19,8 @@ type StringGroups struct {
 	Chinese []StringSegment // 汉字段
 	Letters []StringSegment // 字母段
 	Digits  []StringSegment // 数字段
-	Others  []StringSegment // 其他非空白字符段
+	Others  []StringSegment // 其他字符段
+	Commons []StringSegment // 通用段，包括*，X，x
 }
 
 // StringSegment 表示原始字符串中的一个子串段
@@ -46,6 +48,8 @@ func (sg *StringGroups) GetSegmentsByType(groupType GroupType) []StringSegment {
 		return sg.Digits
 	case GroupTypeOthers:
 		return sg.Others
+	case GroupTypeCommon:
+		return sg.Commons
 	default:
 		return nil
 	}
@@ -133,7 +137,19 @@ const (
 	typeLetters        // 字母
 	typeDigits         // 数字
 	typeOther          // 其他非空白字符
+	typeCommon         // 通用字符
 )
+
+var commonBytes = []byte{'*', 'X', 'x', '-', '(', ')', '_', '.', '@'}
+
+func isCommonByte(b int32) bool {
+	for i := range commonBytes {
+		if b == int32(commonBytes[i]) {
+			return true
+		}
+	}
+	return false
+}
 
 // SplitIntoGroups 将字符串分为汉字、字母、数字和其他字符四组
 func SplitIntoGroups(s string) StringGroups {
@@ -143,6 +159,7 @@ func SplitIntoGroups(s string) StringGroups {
 		Letters: make([]StringSegment, 0, len(s)/8+1), // 假设约1/8的字符是字母
 		Digits:  make([]StringSegment, 0, len(s)/8+1), // 假设约1/8的字符是数字
 		Others:  make([]StringSegment, 0, len(s)/8+1), // 假设约1/8的字符是其他非空白字符
+		Commons: make([]StringSegment, 0, len(s)/8+1), // 假设约1/8的字符是其他非空白字符
 	}
 
 	start := 0                 // 当前段的起始位置
@@ -153,7 +170,9 @@ func SplitIntoGroups(s string) StringGroups {
 	for i, r := range s {
 		// 判断字符类型
 		var charType int
-		if unicode.Is(unicode.Han, r) {
+		if isCommonByte(r) {
+			charType = typeCommon
+		} else if unicode.Is(unicode.Han, r) {
 			charType = typeChinese
 		} else if unicode.IsLetter(r) {
 			charType = typeLetters
@@ -179,6 +198,8 @@ func SplitIntoGroups(s string) StringGroups {
 				result.Letters = append(result.Letters, seg)
 			case typeDigits:
 				result.Digits = append(result.Digits, seg)
+			case typeCommon:
+				result.Commons = append(result.Commons, seg)
 			case typeOther:
 				result.Others = append(result.Others, seg)
 			}
@@ -199,6 +220,8 @@ func SplitIntoGroups(s string) StringGroups {
 			result.Letters = append(result.Letters, seg)
 		case typeDigits:
 			result.Digits = append(result.Digits, seg)
+		case typeCommon:
+			result.Commons = append(result.Commons, seg)
 		case typeOther:
 			result.Others = append(result.Others, seg)
 		}
