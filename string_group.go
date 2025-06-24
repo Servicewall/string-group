@@ -61,25 +61,61 @@ func (sg *StringGroups) MergeMultiGroups(types ...GroupType) []StringSegment {
 		return nil
 	}
 
-	// 创建一个新的切片来存储合并后的结果
-	var merged []StringSegment
-
-	// 合并所有指定类型的分组
+	// 获取所有分组并计算总容量
+	groups := make([][]StringSegment, 0, len(types))
+	totalSize := 0
 	for _, t := range types {
 		group := sg.GetSegmentsByType(t)
-		merged = append(merged, group...)
-	}
-
-	// 按照起始位置排序
-	for i := 0; i < len(merged)-1; i++ {
-		for j := i + 1; j < len(merged); j++ {
-			if merged[i].Start > merged[j].Start {
-				merged[i], merged[j] = merged[j], merged[i]
-			}
+		if len(group) > 0 {
+			groups = append(groups, group)
+			totalSize += len(group)
 		}
 	}
 
-	return merged
+	// 如果没有有效分组，返回空
+	if len(groups) == 0 {
+		return nil
+	}
+
+	// 如果只有一个分组，直接返回
+	if len(groups) == 1 {
+		return groups[0]
+	}
+
+	// 创建结果切片
+	result := make([]StringSegment, 0, totalSize)
+
+	// 使用归并排序的思想合并多个已排序的切片
+	// 为每个分组创建一个索引
+	indices := make([]int, len(groups))
+
+	// 循环直到所有分组都处理完毕
+	for {
+		minIdx := -1
+		minStart := -1
+
+		// 找出当前所有分组中Start最小的段
+		for i, group := range groups {
+			if indices[i] < len(group) {
+				curStart := group[indices[i]].Start
+				if minIdx == -1 || curStart < minStart {
+					minIdx = i
+					minStart = curStart
+				}
+			}
+		}
+
+		// 如果没有找到最小值，说明所有分组都处理完毕
+		if minIdx == -1 {
+			break
+		}
+
+		// 将找到的最小段添加到结果中
+		result = append(result, groups[minIdx][indices[minIdx]])
+		indices[minIdx]++
+	}
+
+	return result
 }
 
 // MergeMultiGroupsWithContinuousIntervals 合并多个指定类型的分组，并连接连续的区间
