@@ -123,11 +123,6 @@ func (sg *StringGroups) MergeMultiGroupsWithContinuousIntervals(maxlength, minLe
 	// 先合并多个分组
 	merged := sg.MergeMultiGroups(types...)
 
-	// 如果合并后的结果为空或只有一个元素，则直接返回
-	if len(merged) <= 1 {
-		return merged
-	}
-
 	// 连接连续的区间
 	return connectContinuousIntervals(maxlength, minLength, merged)
 }
@@ -135,6 +130,11 @@ func (sg *StringGroups) MergeMultiGroupsWithContinuousIntervals(maxlength, minLe
 // connectContinuousIntervals 连接连续的区间
 func connectContinuousIntervals(maxlength, minLength int, segments []StringSegment) []StringSegment {
 	if len(segments) <= 1 {
+		if len(segments) == 1 {
+			if length := segments[0].End - segments[0].Start; (minLength > 0 && length < minLength) || (maxlength != 0 && length > maxlength) {
+				return nil
+			}
+		}
 		return segments
 	}
 
