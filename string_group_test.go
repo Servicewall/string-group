@@ -32,7 +32,7 @@ func TestCommonGroups(t *testing.T) {
 // 筛选指定长度的子串
 func TestMergeMultiGroupsWithContinuousIntervals(t *testing.T) {
 	groups := SplitIntoGroups(example)
-	allButChineseWithContinuous := groups.MergeMultiGroupsWithContinuousIntervals(4, 4, GroupTypeLetters, GroupTypeDigits, GroupTypeOthers)
+	allButChineseWithContinuous := groups.MergeMultiGroupsWithContinuousIntervals(example, true, 4, 4, GroupTypeLetters, GroupTypeDigits, GroupTypeOthers)
 	for _, seg := range allButChineseWithContinuous {
 		if seg.End-seg.Start != 4 {
 			t.Fatal("筛选指定长度的子串错误")

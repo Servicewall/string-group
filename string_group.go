@@ -1,6 +1,9 @@
 package string_group
 
-import "unicode"
+import (
+	"unicode"
+	"unicode/utf8"
+)
 
 // GroupType 表示分组类型
 type GroupType int
@@ -119,16 +122,16 @@ func (sg *StringGroups) MergeMultiGroups(types ...GroupType) []StringSegment {
 }
 
 // MergeMultiGroupsWithContinuousIntervals 合并多个指定类型的分组，并连接连续的区间
-func (sg *StringGroups) MergeMultiGroupsWithContinuousIntervals(maxlength, minLength int, types ...GroupType) []StringSegment {
+func (sg *StringGroups) MergeMultiGroupsWithContinuousIntervals(originalStr string, boundaryCheck bool, maxlength, minLength int, types ...GroupType) []StringSegment {
 	// 先合并多个分组
 	merged := sg.MergeMultiGroups(types...)
 
 	// 连接连续的区间
-	return connectContinuousIntervals(maxlength, minLength, merged)
+	return connectContinuousIntervals(originalStr, boundaryCheck, maxlength, minLength, merged)
 }
 
 // connectContinuousIntervals 连接连续的区间
-func connectContinuousIntervals(maxlength, minLength int, segments []StringSegment) []StringSegment {
+func connectContinuousIntervals(originalStr string, boundaryCheck bool, maxlength, minLength int, segments []StringSegment) []StringSegment {
 	if len(segments) <= 1 {
 		if len(segments) == 1 {
 			if length := segments[0].End - segments[0].Start; (minLength > 0 && length < minLength) || (maxlength != 0 && length > maxlength) {
@@ -151,7 +154,7 @@ func connectContinuousIntervals(maxlength, minLength int, segments []StringSegme
 			current.End = segments[i].End
 		} else {
 			// 否则，将当前区间添加到结果中，并开始处理下一个区间
-			if length := current.End - current.Start; length >= minLength && (maxlength == 0 || length <= maxlength) {
+			if length := current.End - current.Start; length >= minLength && (maxlength == 0 || length <= maxlength) && (!boundaryCheck || validBoundary(originalStr, current.Start, current.End)) {
 				result = append(result, current)
 			}
 			current = segments[i]
@@ -159,7 +162,7 @@ func connectContinuousIntervals(maxlength, minLength int, segments []StringSegme
 	}
 
 	// 添加最后一个处理的区间
-	if length := current.End - current.Start; length >= minLength && (maxlength == 0 || length <= maxlength) {
+	if length := current.End - current.Start; length >= minLength && (maxlength == 0 || length <= maxlength) && (!boundaryCheck || validBoundary(originalStr, current.Start, current.End)) {
 		result = append(result, current)
 	}
 
@@ -330,4 +333,32 @@ func max(a, b int) int {
 		return a
 	}
 	return b
+}
+
+func validBoundary(s string, start, end int) bool {
+	// 检查前边界
+	if start > 0 {
+		prevChar, _ := utf8.DecodeLastRuneInString(s[:start])
+		if isIllegalCharacter(prevChar) {
+			return false
+		}
+	}
+	if end < len(s) {
+		nextChar, _ := utf8.DecodeRuneInString(s[end:])
+		if isIllegalCharacter(nextChar) {
+			return false
+		}
+	}
+	return true
+}
+
+func isIllegalCharacter(r rune) bool {
+	if unicode.IsLetter(r) || unicode.IsDigit(r) || r == '_' {
+		return true
+	}
+	switch r {
+	case '.', '*', '/', '-', '|', '%':
+		return true
+	}
+	return false
 }
