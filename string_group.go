@@ -353,11 +353,11 @@ func validBoundary(s string, start, end int) bool {
 }
 
 func isIllegalCharacter(r rune) bool {
-	if unicode.IsLetter(r) || unicode.IsDigit(r) || r == '_' {
+	if unicode.IsLetter(r) || unicode.IsDigit(r) {
 		return true
 	}
 	switch r {
-	case '.', '*', '/', '-', '|', '%':
+	case '.', '*', '-', '_', '|', '%':
 		return true
 	}
 	return false
